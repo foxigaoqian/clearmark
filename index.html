@@ -12,7 +12,7 @@
   <link rel="canonical" href="https://clearmark.example.com/">
 
   <!-- ===== Theme + PWA ===== -->
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#0A0A0B">
   <meta name="application-name" content="ClearMark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -73,8 +73,9 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
 
+  <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
 
   <!-- COI must register BEFORE any module — enables WASM threads + WebGPU -->
@@ -99,9 +100,7 @@
     </nav>
   </header>
 
-  <!-- ADSTERRA 728x90: paste banner code here (get code from adsterra.com dashboard and replace this placeholder) -->
-  <div class="ad-slot ad-728x90" style="min-height:90px;display:flex;align-items:center;justify-content:center;margin:12px auto;max-width:728px;">
-  </div>
+  <!-- ADSTERRA 728x90 REMOVED per design standard §6.3: tool workspace stays ad-free above the fold -->
 
   <!-- UPDATE BANNER -->
   <div class="update-banner" id="update-banner" hidden>
@@ -110,23 +109,8 @@
     <button class="btn-ghost btn-sm" id="btn-update-dismiss" aria-label="Dismiss">✕</button>
   </div>
 
-  <!-- MODEL LOADER OVERLAY -->
-  <div class="model-loader" id="model-loader">
-    <div class="loader-card">
-      <img src="assets/logo.svg" alt="ClearMark" class="loader-logo">
-      <h2 id="loader-title">Looking for the AI model…</h2>
-      <p class="text-muted" id="loader-sub">Checking your device first — only downloads if it's not already here.</p>
-      <div class="progress-track">
-        <div class="progress-fill" id="loader-fill" style="width:0%"></div>
-        <div class="progress-shimmer"></div>
-      </div>
-      <p class="loader-meta" id="loader-meta">Checking…</p>
-      <p class="loader-tip text-muted" id="loader-backend"></p>
-    </div>
-  </div>
-
-  <!-- MAIN APP -->
-  <main class="app-grid" id="app-grid" hidden>
+  <!-- MAIN APP — renders immediately on first paint; the AI model lazy-loads in the background -->
+  <main class="app-grid" id="app-grid">
 
     <!-- LEFT SIDEBAR — all controls visible at all times -->
     <aside class="sidebar">
@@ -196,8 +180,9 @@
           <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <h2 class="dropzone-title">Drop an image or video to start</h2>
-          <p class="dropzone-sub">JPG, PNG, WEBP, BMP, MP4, WEBM, MOV — up to 100 MB</p>
+          <h2 class="dropzone-title">Clean watermarks.<br>Keep your pixels.</h2>
+          <p class="dropzone-sub">Drop an image or video — JPG, PNG, WEBP, BMP, MP4, WEBM, MOV, up to 100 MB</p>
+          <p class="dropzone-privacy"><span class="dot"></span>Files never leave your browser</p>
           <button class="btn-primary" id="btn-browse">Browse files</button>
           <input type="file" id="file-input" accept="image/*,video/*" hidden>
           <div class="dropzone-formats">
@@ -209,7 +194,32 @@
             <span class="badge">WEBM</span>
             <span class="badge">MOV</span>
           </div>
+          <!-- AI engine status: non-blocking, updates as the model lazy-loads -->
+          <button class="engine-chip" id="engine-chip" type="button" title="AI engine status">
+            <span class="engine-dot" id="engine-dot"></span>
+            <span id="engine-text">Warming up the AI engine…</span>
+          </button>
         </div>
+        <!-- Inline progress: only shown if a file arrives before the model is ready.
+             Lives inside the dropzone — never a fullscreen overlay. -->
+        <div class="dropzone-progress" id="dropzone-progress" hidden>
+          <div class="dp-icon">✦</div>
+          <h3 class="dp-title">Preparing the AI engine</h3>
+          <p class="dp-sub">One-time download — afterwards it works fully offline.</p>
+          <div class="progress-track dp-track">
+            <div class="progress-fill" id="dp-fill" style="width:0%"></div>
+            <div class="progress-shimmer"></div>
+          </div>
+          <p class="dp-meta" id="dp-meta">Starting…</p>
+        </div>
+      </div>
+
+      <!-- Inline engine banner (editor state): slim, in-flow, non-blocking -->
+      <div class="engine-banner" id="engine-banner" hidden>
+        <span class="engine-dot"></span>
+        <span class="eb-text" id="engine-banner-text">Downloading AI model…</span>
+        <div class="progress-track eb-track"><div class="progress-fill" id="engine-banner-fill" style="width:0%"></div></div>
+        <span class="eb-meta" id="engine-banner-meta"></span>
       </div>
 
       <!-- EDITOR (after upload) -->
