@@ -255,3 +255,6 @@ a { color: var(--brand-hi); text-decoration: none; }
   .site-nav a { padding: 8px 10px; }
   .cta-row .btn { flex: 1 1 auto; justify-content: center; }
 }
+
+/* Hide ad slots until ad code is inserted */
+.ad-slot:empty{display:none!important;}

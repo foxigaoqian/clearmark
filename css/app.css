@@ -1338,3 +1338,6 @@ body.app-page { height: 100vh; overflow: hidden; }
   .nav-btn { padding: 6px 10px; font-size: 12px; }
   .brand-name { font-size: 15px; }
 }
+
+/* Hide ad slots until ad code is inserted */
+.ad-slot:empty{display:none!important;}
