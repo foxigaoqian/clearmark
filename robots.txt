@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# We want indexing of everything — there is no private content.
+# The AI model file is hosted externally; nothing to hide here.
+
+# TODO: replace clearmark.example.com with your real domain before launch
+Sitemap: https://clearmark.example.com/sitemap.xml

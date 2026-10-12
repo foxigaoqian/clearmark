@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <title>About ClearMark — Free Watermark Remover for Images &amp; Videos</title>
+  <meta name="description" content="About ClearMark — a free, private, browser-based watermark remover for your own images and videos. No accounts, no uploads, no cloud. Free forever.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://clearmark.example.com/about.html">
+
+  <meta name="theme-color" content="#2563eb">
+  <meta name="application-name" content="ClearMark">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://clearmark.example.com/about.html">
+  <meta property="og:title" content="About ClearMark — Free Watermark Remover">
+  <meta property="og:description" content="The story behind ClearMark — free, private, browser-based watermark removal for your own images and videos.">
+  <meta property="og:image" content="https://clearmark.example.com/assets/social-preview.png">
+  <meta property="og:site_name" content="ClearMark">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="About ClearMark — Free Watermark Remover">
+  <meta name="twitter:description" content="Free, private, browser-based watermark remover. No accounts, no uploads, free forever.">
+  <meta name="twitter:image" content="https://clearmark.example.com/assets/social-preview.png">
+
+  <!-- Organization schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "ClearMark",
+    "url": "https://clearmark.example.com/",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Web Browser",
+    "description": "Free browser-based watermark remover for your own images and videos.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap">
+
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/about.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/logo-icon.svg" alt="" class="brand-icon">
+      <span class="brand-name">ClearMark</span>
+    </div>
+    <nav class="topnav">
+      <a class="nav-btn" href="index.html">Editor</a>
+      <a class="nav-btn active" href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main class="about-page">
+
+    <!-- HERO -->
+    <section class="about-hero">
+      <img src="assets/logo.svg" alt="ClearMark" class="about-logo">
+      <h1 class="about-title">ClearMark</h1>
+      <p class="about-tagline">
+        Free Watermark Remover — Clean Images &amp; Videos in Your Browser.
+        Nothing to install. Nothing to sign up for.
+      </p>
+      <div class="badge-row">
+        <span class="badge">v1.0.0</span>
+        <span class="badge">MIT License</span>
+        <span class="badge success">No telemetry</span>
+        <span class="badge success">No accounts</span>
+        <span class="badge success">No cloud</span>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section class="about-card">
+      <h2>🎯 Why this exists</h2>
+      <blockquote>
+        Most online watermark removers charge $10–$30 / month,
+        upload your private images to unknown servers, and slap their own watermark
+        on the free tier. That's broken.
+      </blockquote>
+      <p>
+        ClearMark runs <strong>entirely in your browser</strong>. Your file
+        never leaves the tab. No subscriptions, no accounts, no cloud — verifiable
+        because the source is MIT-licensed and the network tab is empty after first load.
+      </p>
+      <p class="text-muted">
+        Use it to clean up watermarks on <strong>your own</strong> photos and videos —
+        AI-generated images, social clips, drafts with leftover marks. Please respect
+        other people's copyrights and platform terms.
+      </p>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="about-card">
+      <h2>⚙️ How it works (the boring honest version)</h2>
+      <ol class="howto-list">
+        <li>
+          <strong>You drop an image or video in.</strong> The file stays
+          in-memory in your browser. It never leaves.
+        </li>
+        <li>
+          <strong>You paint the watermark.</strong> Pick a preset for common
+          AI watermarks (Gemini, DALL·E, Midjourney…), or draw your own mask —
+          that becomes the inpainting mask.
+        </li>
+        <li>
+          <strong>An AI model runs in WebAssembly.</strong> The model
+          (<a href="https://github.com/advimman/lama" target="_blank" rel="noopener">LaMa</a>,
+          ~50 MB, downloaded once and cached) runs inside your browser tab via
+          <a href="https://onnxruntime.ai/docs/tutorials/web/" target="_blank" rel="noopener">ONNX Runtime Web</a>
+          — on your GPU if your browser supports WebGPU, otherwise on your CPU.
+        </li>
+        <li>
+          <strong>You download the result.</strong> Same browser, same tab, same
+          machine. No server saw a thing.
+        </li>
+      </ol>
+      <p class="text-muted">
+        Open your browser's Network tab to verify: after the first load, no requests are made.
+      </p>
+    </section>
+
+    <!-- OPEN SOURCE -->
+    <section class="about-card">
+      <h2>💝 Free &amp; open source</h2>
+      <p>
+        ClearMark is free <em>forever</em>. There are no servers to pay for,
+        no subscriptions to add later, no premium tier to unlock.
+      </p>
+      <p class="text-muted">
+        Based on open-source WatermarkOut (MIT). The inpainting engine is
+        <a href="https://github.com/advimman/lama" target="_blank" rel="noopener">LaMa</a>
+        (Suvorov et al., 2021), running via ONNX Runtime Web.
+      </p>
+    </section>
+
+    <!-- TECH -->
+    <section class="about-card">
+      <h2>🔧 Built with</h2>
+      <ul class="tech-list">
+        <li><strong>Vanilla HTML/CSS/JS</strong> — no build step, no framework, no node_modules</li>
+        <li><strong>LaMa</strong> — Large Mask Inpainting (Suvorov et al., 2021)</li>
+        <li><strong>ONNX Runtime Web</strong> — WebGPU + WASM AI inference in the browser</li>
+        <li><strong>IndexedDB</strong> + <strong>Service Worker</strong> — offline support</li>
+      </ul>
+    </section>
+
+    <footer class="about-footer">
+      <p class="footer-credit">
+        <strong>ClearMark</strong> — Free Watermark Remover
+      </p>
+      <p class="text-muted">Based on open-source WatermarkOut (MIT).</p>
+      <p class="footer-links text-muted">
+        <a href="index.html">Editor</a>
+        · <a href="tiktok-watermark-remover.html">TikTok</a>
+        · <a href="instagram-watermark-remover.html">Instagram</a>
+        · <a href="youtube-watermark-remover.html">YouTube</a>
+        · <a href="gemini-watermark-remover.html">Gemini</a>
+        · <a href="video-watermark-remover.html">Video</a>
+      </p>
+    </footer>
+
+  </main>
+
+</body>
+</html>
