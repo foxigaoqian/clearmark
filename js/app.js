@@ -38,12 +38,16 @@ const D = {
   statusDot: document.getElementById('status-dot'),
   statusText: document.getElementById('status-text'),
 
-  loader: document.getElementById('model-loader'),
-  loaderTitle: document.getElementById('loader-title'),
-  loaderSub: document.getElementById('loader-sub'),
-  loaderFill: document.getElementById('loader-fill'),
-  loaderMeta: document.getElementById('loader-meta'),
-  loaderBackend: document.getElementById('loader-backend'),
+  engineChip: document.getElementById('engine-chip'),
+  engineDot: document.getElementById('engine-dot'),
+  engineText: document.getElementById('engine-text'),
+  dropzoneProgress: document.getElementById('dropzone-progress'),
+  dpFill: document.getElementById('dp-fill'),
+  dpMeta: document.getElementById('dp-meta'),
+  engineBanner: document.getElementById('engine-banner'),
+  engineBannerText: document.getElementById('engine-banner-text'),
+  engineBannerFill: document.getElementById('engine-banner-fill'),
+  engineBannerMeta: document.getElementById('engine-banner-meta'),
 
   appGrid: document.getElementById('app-grid'),
 
@@ -125,22 +129,120 @@ function setStatus(label, kind = 'idle') {
   else if (kind === 'error') D.statusDot.classList.add('error');
 }
 
-function setLoaderProgress({ done = 0, total = 0, stage = '', cached = false }) {
-  const pct = total > 0 ? (done / total) * 100 : (done > 0 ? 100 : 0);
-  D.loaderFill.style.width = `${Math.min(100, pct).toFixed(1)}%`;
+// === Lazy AI engine (no fullscreen blocking loader) ===
+// The tool UI renders immediately on first paint. The model downloads
+// silently in the background; if the user acts before it's ready, an
+// inline progress UI (inside the dropzone / a slim in-flow banner) waits
+// for it. Nothing ever covers the screen.
+let modelReadyPromise = null;
+let modelReadyState = 'pending'; // pending | ready | error
+let modelReadyError = null;
+
+function setEngineChip(mode, text) {
+  if (!D.engineChip) return;
+  D.engineText.textContent = text;
+  D.engineDot.className = 'engine-dot' + (mode ? ` ${mode}` : '');
+  D.engineChip.dataset.state = mode || '';
+  D.engineChip.disabled = mode !== 'error';
+  D.engineChip.title = mode === 'error'
+    ? 'AI engine failed to load \u2014 click to retry'
+    : 'AI engine status';
+}
+
+function updateEngineProgress({ done = 0, total = 0, stage = '', cached = false, ready = false }) {
+  const pct = total > 0 ? Math.min(100, (done / total) * 100) : (done > 0 ? 100 : 0);
   const sizeStr = total > 0
     ? `${formatBytes(done)} / ${formatBytes(total)}`
     : (done > 0 ? formatBytes(done) : '');
-  if (cached) {
-    document.getElementById('loader-title').textContent = 'Found it on your device';
-    document.getElementById('loader-sub').textContent = 'Loading the model into the browser…';
-    D.loaderMeta.textContent = 'Loaded from your device (no download needed)';
+  // Status chip (always visible in the dropzone empty state)
+  if (ready) {
+    setEngineChip('ready', 'AI engine ready \u2713');
+  } else if (cached) {
+    setEngineChip('loading', 'Loading AI engine from your device\u2026');
   } else if (done > 0 && total > 0) {
-    document.getElementById('loader-title').textContent = 'First-time setup';
-    document.getElementById('loader-sub').textContent = 'This is the only time you\'ll see a download. After this it works fully offline.';
-    D.loaderMeta.textContent = `${stage}${sizeStr ? ' — ' + sizeStr : ''}`;
-  } else {
-    D.loaderMeta.textContent = stage || 'Checking…';
+    setEngineChip('loading', `Downloading AI model ${sizeStr}`);
+  }
+  // Inline dropzone progress (only visible while a file is waiting)
+  if (D.dpFill) D.dpFill.style.width = `${pct.toFixed(1)}%`;
+  if (D.dpMeta) D.dpMeta.textContent = cached
+    ? 'Found on your device \u2014 loading into the browser\u2026'
+    : (stage && sizeStr ? `${stage} \u2014 ${sizeStr}` : (stage || 'Starting\u2026'));
+  // Inline editor banner (only visible while Remove is waiting)
+  if (D.engineBannerFill) D.engineBannerFill.style.width = `${pct.toFixed(1)}%`;
+  if (D.engineBannerText) D.engineBannerText.textContent = cached
+    ? 'Loading AI engine from your device\u2026'
+    : (done > 0 && total > 0 ? 'Downloading AI model\u2026' : 'Preparing AI engine\u2026');
+  if (D.engineBannerMeta) D.engineBannerMeta.textContent = sizeStr;
+}
+
+function startModelLoad() {
+  if (modelReadyPromise) return modelReadyPromise;
+  modelReadyState = 'pending';
+  modelReadyError = null;
+  setEngineChip('loading', 'Warming up the AI engine\u2026');
+  modelReadyPromise = (async () => {
+    try {
+      const cachedAlready = await isModelCached();
+      setModelStatus(cachedAlready ? 'cached' : 'downloading');
+      dbg.set('model', cachedAlready ? 'cached' : 'downloading', cachedAlready ? 'ok' : 'warn');
+      refreshStorageStatus();
+
+      await inpainter.init((p) => updateEngineProgress(p));
+      const backend = inpainter.getBackend();
+      if (D.backendStatus) {
+        D.backendStatus.textContent = backend.toUpperCase();
+        D.backendStatus.classList.add('ok');
+      }
+      setModelStatus('cached');
+      dbg.set('backend', backend.toUpperCase(), backend === 'webgpu' ? 'ok' : 'warn');
+      dbg.set('model', 'cached', 'ok');
+      dbg.set('ready', 'yes', 'ok');
+      refreshStorageStatus();
+      setStatus(`Ready (${backend})`, 'ready');
+      setEngineChip('ready', 'AI engine ready \u2713');
+      modelReadyState = 'ready';
+      toast('AI engine ready.', 'success', 2500);
+    } catch (e) {
+      console.error('Model load failed:', e);
+      dbg.error('Model load: ' + (e.message || e));
+      dbg.set('ready', 'no', 'error');
+      setStatus('Engine failed', 'error');
+      setModelStatus('error');
+      setEngineChip('error', 'AI engine failed to load \u2014 click to retry');
+      modelReadyState = 'error';
+      modelReadyError = e;
+      throw e;
+    }
+  })();
+  return modelReadyPromise;
+}
+
+// Wait for the engine, showing an inline (never fullscreen) progress UI.
+// Returns true when ready, false on failure.
+async function ensureModelReady(where) {
+  if (modelReadyState === 'ready') return true;
+  if (modelReadyState === 'error') {
+    toast('AI engine failed to load: ' + (modelReadyError?.message || modelReadyError) + ' \u2014 click the status chip to retry.', 'error', 6000);
+    return false;
+  }
+  if (where === 'dropzone' && D.dropzoneProgress) {
+    D.dropzone.classList.add('is-preparing');
+    D.dropzoneProgress.hidden = false;
+  } else if (D.engineBanner) {
+    D.engineBanner.hidden = false;
+  }
+  try {
+    await startModelLoad();
+    return true;
+  } catch (e) {
+    toast('Could not load the AI model: ' + (e.message || e), 'error', 6000);
+    return false;
+  } finally {
+    if (D.dropzoneProgress) {
+      D.dropzone.classList.remove('is-preparing');
+      D.dropzoneProgress.hidden = true;
+    }
+    if (D.engineBanner) D.engineBanner.hidden = true;
   }
 }
 
@@ -153,18 +255,17 @@ function formatBytes(b) {
 
 async function bootstrap() {
   D.versionBadge.textContent = `v${APP_VERSION}`;
+
+  // Render the tool UI on first paint — no fullscreen blocking loader.
+  // SEO visitors see a usable dropzone within a second; the AI model
+  // downloads silently in the background (lazy load).
+  D.appGrid.hidden = false;
   setStatus('Loading model', 'busy');
 
   // Debug initial state
   dbg.set('coi', window.crossOriginIsolated ? 'YES' : 'no', window.crossOriginIsolated ? 'ok' : 'warn');
   dbg.set('threads', String(navigator.hardwareConcurrency || 1));
   dbg.set('tool', state.tool);
-
-  // Probe cache state
-  const cachedAlready = await isModelCached();
-  setModelStatus(cachedAlready ? 'cached' : 'downloading');
-  dbg.set('model', cachedAlready ? 'cached' : 'downloading', cachedAlready ? 'ok' : 'warn');
-  refreshStorageStatus();
 
   // SW + coverage poll, fire-and-forget
   registerServiceWorker();
@@ -175,46 +276,16 @@ async function bootstrap() {
     }
   }, 500);
 
-  // Show the loader while the model loads AND ORT initializes the inference
-  // session. We only reveal the editor when the engine is fully usable — that
-  // way the "AI model still loading" modal never appears mid-edit.
-
-  const showAppNow = () => {
-    D.loader.style.opacity = '0';
-    D.loader.style.transition = 'opacity 0.3s';
-    setTimeout(() => {
-      D.loader.hidden = true;
-      D.appGrid.hidden = false;
-    }, 300);
-  };
-
-  try {
-    await inpainter.init((p) => setLoaderProgress(p));
-    const backend = inpainter.getBackend();
-    if (D.loaderBackend) D.loaderBackend.textContent = `Running on: ${backend.toUpperCase()}`;
-    if (D.backendStatus) {
-      D.backendStatus.textContent = backend.toUpperCase();
-      D.backendStatus.classList.add('ok');
+  // Retry from the engine status chip when the background load fails
+  D.engineChip?.addEventListener('click', () => {
+    if (modelReadyState === 'error') {
+      modelReadyPromise = null;
+      startModelLoad().catch(() => {});
     }
-    setModelStatus('cached');
-    dbg.set('backend', backend.toUpperCase(), backend === 'webgpu' ? 'ok' : 'warn');
-    dbg.set('model', 'cached', 'ok');
-    dbg.set('ready', 'yes', 'ok');
-    refreshStorageStatus();
-    setStatus(`Ready (${backend})`, 'ready');
-    toast('AI engine ready.', 'success', 2500);
-    // Only show the app once the inpainter is fully ready
-    showAppNow();
-  } catch (e) {
-    console.error('Bootstrap failed:', e);
-    dbg.error('Bootstrap: ' + (e.message || e));
-    dbg.set('ready', 'no', 'error');
-    setStatus('Failed', 'error');
-    setModelStatus('error');
-    document.getElementById('loader-title').textContent = 'Could not load the AI model';
-    document.getElementById('loader-sub').textContent = String(e.message || e);
-    D.loaderMeta.textContent = 'Check static/js/model-cache.js URL or your internet, then refresh.';
-  }
+  });
+
+  // Kick off the model download in the background — never blocks the UI.
+  startModelLoad().catch(() => {});
 }
 
 function setModelStatus(state) {
@@ -290,6 +361,10 @@ async function onFileLoaded({ file, image, kind, error }) {
     dbg.error(error);
     return;
   }
+
+  // If the AI model is still downloading in the background, wait for it
+  // with an inline progress UI inside the dropzone (never fullscreen).
+  if (!(await ensureModelReady('dropzone'))) return;
 
   state.filename = file.name;
   state.kind = kind;
@@ -587,9 +662,10 @@ async function runRemoval() {
     dbg.warn('Mask is empty when Remove clicked');
     return;
   }
-  if (!(await inpainter.isReady())) {
+  // The model lazy-loads in the background; if the user beat the download,
+  // wait for it with a slim inline banner instead of a dead-end modal.
+  if (!(await ensureModelReady('editor'))) {
     D.btnRemove.classList.remove('loading');
-    showStageModal({ icon: '⏳', title: 'AI model still loading', msg: 'Give it a few more seconds and try again.' });
     dbg.warn('Inpainter not ready when Remove clicked');
     return;
   }
